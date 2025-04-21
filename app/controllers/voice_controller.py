@@ -1,4 +1,5 @@
 from datetime import datetime
+import boto3
 from fastapi import APIRouter, Query, UploadFile, File, HTTPException, Path
 from fastapi.responses import StreamingResponse
 from app.models.schemas import (
@@ -6,14 +7,22 @@ from app.models.schemas import (
     Voice, SynthesisRequest, SynthesisBatchRequest,
     SynthesisBatchStatusResponse, VoiceSample,
 )
-from uuid import UUID
+from uuid import UUID, uuid4
 from app.services import voice_service, synthesis_service
+from app.services.transcription_service import transcribe_s3_audio
 
 router = APIRouter(tags=["Voice"])
 
+s3 = boto3.client("s3")
+BUCKET = "voicecloningtest"
+
 @router.post("/upload", response_model=UploadedFile)
-async def upload_file(file: UploadFile = File(...)):
-    return await voice_service.upload_file(file)
+async def upload_to_s3(file: UploadFile, prefix="samples"):
+    file_id = str(uuid4())
+    key = f"{prefix}/{file_id}_{file.filename}"
+    content = await file.read()
+    s3.put_object(Bucket=BUCKET, Key=key, Body=content, ContentType=file.content_type)
+    return {"filename": file.filename, "key": key}
 
 @router.post("/voices", response_model=VoiceSample)
 async def create_voice(req: Voice):
@@ -49,25 +58,3 @@ async def list_voices(limit: int = Query(20), offset: int = Query(0)):
 async def delete_voice(voiceId: UUID = Path(...)):
     if str(voiceId) in voice_db:
         del voice_db[str(voiceId)]
-        return
-    raise HTTPException(status_code=404, detail="Voice not found")
-
-# Simulated voice samples
-voice_samples = {
-    "some-uuid": [
-        VoiceSample(
-            id=UUID("3fa85f64-5717-4562-b3fc-2c963f66afa6"),
-            text="Hello world!",
-            audioUrl="https://example.com/audio.mp3",
-            created=datetime.utcnow(),
-            duration=2.3,
-            speed="normal",
-            emotion="neutral"
-        )
-    ]
-}
-
-@router.get("/voices/{voiceId}/samples", response_model=dict)
-async def get_voice_samples(voiceId: UUID):
-    samples = voice_samples.get(str(voiceId), [])
-    return {"samples": samples}
