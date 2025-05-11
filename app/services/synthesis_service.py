@@ -1,32 +1,21 @@
-from fastapi.responses import StreamingResponse
-from app.models.schemas import SynthesisRequest, SynthesisBatchRequest, SynthesisBatchStatusResponse
-from io import BytesIO
-import uuid
-import random
-import datetime
+import os
+import httpx
+from app.config import settings
 
-# Simulate a voice synthesis service
-async def synthesize(req: SynthesisRequest):
-    audio_data = BytesIO(b"FAKE_MP3_AUDIO")
-    return StreamingResponse(audio_data, media_type="audio/mpeg")
+CARTESIA_API_KEY = settings.CARTESIA_API_KEY
+CARTESIA_BASE_URL = settings.CARTESIA_BASE_URL
+HEADERS = {"Authorization": f"Bearer {CARTESIA_API_KEY}"}
 
-# Simulate batch synthesis request
-async def synthesize_batch(req: SynthesisBatchRequest):
-    batch_id = str(uuid.uuid4())
-    return {"batchId": batch_id}
 
-# Simulate polling a batch job
-async def get_batch_status(batch_id: uuid.UUID):
-    return SynthesisBatchStatusResponse(
-        batchId=batch_id,
-        status="completed",
-        progress=100,
-        items=[
-            {
-                "outputId": str(uuid.uuid4()),
-                "status": "completed",
-                "downloadUrl": "https://example.com/audio.mp3",
-                "error": None
-            }
-        ]
-    )
+async def synthesize_speech(synthesis_request):
+    payload = {
+        "text": synthesis_request.text,
+        "voiceId": str(synthesis_request.voiceId),
+        "emotion": getattr(synthesis_request, "emotion", "neutral"),
+        "speed": getattr(synthesis_request, "speed", "normal"),
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(f"{CARTESIA_BASE_URL}/speak", json=payload, headers=HEADERS)
+        response.raise_for_status()
+        return response.content  # This returns raw audio data

@@ -1,41 +1,33 @@
-import uuid
-from datetime import datetime, timedelta
-from fastapi import UploadFile
-from app.models.schemas import Voice, VoiceSample, UploadedFile
+from app.clients.cartesia_client import CartesiaClient
+from app.config import settings
 
-async def upload_file(file: UploadFile):
-    now = datetime()
-    return UploadedFile(
-        fileId=uuid.uuid4(),
-        fileName=file.filename,
-        fileSize=1024,
-        duration=3.5,
-        uploadedAt=now,
-        expiresAt=now + timedelta(days=1)
-    )
+cartesia_client = CartesiaClient(api_key=settings.CARTESIA_API_KEY)
 
-async def create_voice(req: Voice):
-    now = datetime()
-    return VoiceSample(
-        id=uuid.uuid4(),
-        name=req.name,
-        description=req.description,
-        mode=req.mode,
-        created=now,
-        lastUsed=now,
-        status="processing",
-        sampleUrl="https://fake-audio-url.com/sample.mp3"
-    )
+async def list_voices():
+    return await cartesia_client.list_voices()
 
 async def get_voice(voice_id):
-    now = datetime()
-    return VoiceSample(
-        id=voice_id,
-        name="Sample Voice",
-        description="Auto-generated voice",
-        mode="stability",
-        created=now,
-        lastUsed=now,
-        status="ready",
-        sampleUrl="https://fake-audio-url.com/sample.mp3"
+    return await cartesia_client.get_voice(voice_id)
+
+async def create_voice_clone(voice_data):
+    return await cartesia_client.create_voice_clone(
+        source_id=voice_data["sourceId"],
+        name=voice_data["name"],
+        description=voice_data["description"],
+        mode=voice_data.get("mode", "stability"),
+        source_type=voice_data.get("sourceType", "upload")
+    )
+
+async def get_voice_samples(voice_id):
+    return await cartesia_client.get_voice_samples(voice_id)
+
+async def delete_voice(voice_id):
+    return await cartesia_client.delete_voice(voice_id)
+
+async def synthesize(req_data):
+    return await cartesia_client.synthesize(
+        text=req_data["text"],
+        voice_id=req_data["voiceId"],
+        emotion=req_data.get("emotion", "neutral"),
+        speed=req_data.get("speed", "normal")
     )

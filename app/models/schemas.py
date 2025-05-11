@@ -13,6 +13,13 @@ class UploadedFile(BaseModel):
     createdAt: datetime
     expiresAt: datetime
 
+class VoiceCloneRequest(BaseModel):
+    sourceType: str = "upload"
+    sourceId: str
+    name: str
+    description: str
+    mode: str = "stability"
+    
 class RecordingStatus(str, Enum):
     waiting = "waiting"
     recording = "recording"
@@ -39,15 +46,11 @@ class Mode(str, Enum):
     synthesis = "syntheis"
 
 class Voice(BaseModel):
-    id: UUID
     name: str
-    description: Optional[str]
-    mode: Mode
-    created: datetime
-    lastUsed: datetime
-    status: VoiceStatus
-    sampleUrl: Optional[str]
-
+    description: str
+    embedding: List[float]  # list of 192 floats
+    language: Optional[str] = None
+    base_voice_id: Optional[str] = None
 
 class Speed(str, Enum):
     slow = "slow"

@@ -8,9 +8,11 @@ class Settings:
     VERSION: str = "1.0.0"
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
 
-    # Example external service settings
-    ELEVEN_LABS_API_KEY: str = os.getenv("ELEVEN_LABS_API_KEY", "")
-    STORAGE_BUCKET_NAME: str = os.getenv("STORAGE_BUCKET_NAME", "voice-cloning-temp")
+    # Cartesia-specific
+    CARTESIA_API_KEY: str = os.getenv("CARTESIA_API_KEY", "sk_car_JQ7ro8UpK8kPS4OnMdPLI")
+    CARTESIA_BASE_URL: str = os.getenv("CARTESIA_BASE_URL", "https://api.cartesia.ai")
+
+    STORAGE_BUCKET_NAME: str = os.getenv("STORAGE_BUCKET_NAME", "voicecloningtest")
     USE_FAKE_DATA: bool = os.getenv("USE_FAKE_DATA", "true").lower() == "true"
 
 settings = Settings()
